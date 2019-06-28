@@ -2,7 +2,6 @@
 const path = require('path');
 const fs = require('fs');
 
-
 function help() {
     console.log("Usage: node index.js --input=[path] [options]")
     console.log("Options: \n \
@@ -10,24 +9,10 @@ function help() {
     ");
 }
 
-var args = {};
-process.argv.slice(2).forEach((arg) => {
-    parts = arg.split('=');
-    let name = parts[0].match(/\w+/);
-    args[name] = parts[1];
-});
-
-if (!args.input) {
-    help();
-    process.exit(1);
-}
-
-console.log(`Run source map embeder for directory: ${args.input}`)
-
 function copyRecursiveSync(src, dest) {
-    var exists = fs.existsSync(src);
-    var stats = exists && fs.statSync(src);
-    var isDirectory = exists && stats.isDirectory();
+    let exists = fs.existsSync(src);
+    let stats = exists && fs.statSync(src);
+    let isDirectory = exists && stats.isDirectory();
     if (exists && isDirectory) {
         if (!fs.existsSync(dest)){
             fs.mkdirSync(dest);
@@ -36,16 +21,15 @@ function copyRecursiveSync(src, dest) {
         copyRecursiveSync(path.join(src, childItemName),
                             path.join(dest, childItemName));
         });
-    } else {
+    } else if(exists) {
         fs.copyFileSync(src, dest);
     }
 }
 
-var walkSync = function(dir, filelist) {
-    var fs = fs || require('fs'),
-        files = fs.readdirSync(dir);
+function walkSync (dir, filelist) {
+    let files = fs.readdirSync(dir);
     filelist = filelist || [];
-    files.forEach(function(file) {
+    files.forEach((file) => {
       if (fs.statSync(dir + '/' + file).isDirectory()) {
         filelist = walkSync(dir + '/' + file, filelist);
       }
@@ -60,18 +44,8 @@ function getPathToFile(pathToFile) {
     return pathToFile.substring(0, pathToFile.lastIndexOf('/')+1)
 }
 
-const inputPath = args.input;
-let workingDir = inputPath;
-if (args.output) {
-    const outputPath = args.output;
-    copyRecursiveSync(inputPath, outputPath);
-    workingDir = outputPath;
-}
-
 function replaceSourceMaps(dir) {
-
     let files = [];
-
     walkSync(dir,files);
 
     files.filter((f) => { return f.endsWith('.js')})
@@ -110,4 +84,41 @@ function replaceSourceMaps(dir) {
     });
 }
 
-replaceSourceMaps(workingDir);
+function processArguments(args) {
+    process.argv.slice(2).forEach((arg) => {
+        parts = arg.split('=');
+        let name = parts[0].match(/\w+/);
+        args[name] = parts[1];
+    });
+}
+
+function validateArguments(args) {
+    if (!args.input) {
+        help();
+        process.exit(1);
+    }
+
+    if (!fs.existsSync(args.input)) {
+        console.log(`Invalid source path: ${args.input}`);
+        process.exit(1);
+    }
+}
+
+function main() {
+    var args = {};
+
+    processArguments(args);
+    validateArguments(args);
+
+    console.log(`Run source map embeder for directory: ${args.input}`)
+
+    if (args.output) {
+        copyRecursiveSync(args.input, args.output);
+        replaceSourceMaps(args.output);
+    }
+    else {
+        replaceSourceMaps(args.input);
+    }
+}
+
+main();
