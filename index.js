@@ -11,17 +11,21 @@ function help() {
 
 function copyRecursiveSync(src, dest) {
     let exists = fs.existsSync(src);
-    let stats = exists && fs.statSync(src);
-    let isDirectory = exists && stats.isDirectory();
-    if (exists && isDirectory) {
+
+    if (!exists) {
+        return;
+    }
+    let stats = fs.statSync(src);
+    let isDirectory = stats.isDirectory();
+    if (isDirectory) {
         if (!fs.existsSync(dest)){
             fs.mkdirSync(dest);
         }
-        fs.readdirSync(src).forEach(function(childItemName) {
-        copyRecursiveSync(path.join(src, childItemName),
+        fs.readdirSync(src).forEach((childItemName) => {
+            copyRecursiveSync(path.join(src, childItemName),
                             path.join(dest, childItemName));
         });
-    } else if(exists) {
+    } else {
         fs.copyFileSync(src, dest);
     }
 }
@@ -57,7 +61,6 @@ function replaceSourceMaps(dir) {
         let newContent = "";
         let hasChanges = false;
         let newLines = lines.map((line) => {
-            
             if (line.startsWith("//# sourceMappingURL="))
             {
                 const sourceMapFileNameRegex = /(\w+\.)*map/g;
@@ -75,11 +78,10 @@ function replaceSourceMaps(dir) {
             return line;
         });
 
-        newLines.forEach((line) => {newContent += line + '\n';});
         if (hasChanges) {
+            newLines.forEach((line) => {newContent += line + '\n';});
             fs.writeFileSync(fileName, newContent, "utf8");
         }
-
         console.info(`Execution time for ${fileName} time: %dms old bytes: ${currentContent.length} new bytes: ${newContent.length} lines: ${lines.length} changed: ${hasChanges}`, new Date() - start);
     });
 }
