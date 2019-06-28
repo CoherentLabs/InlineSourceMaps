@@ -1,7 +1,7 @@
-#inline source maps
-##TypeScript
+# Inline source maps
+## TypeScript
     Use command line option --inlineSourceMap
-##uglify-js
+## uglify-js
     Use command line option --source-map content=inline
 ## RequereJS
     Use the script from this repo as follow:
